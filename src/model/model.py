@@ -32,9 +32,7 @@ class FoodItemTagModel(torch.nn.Module):
                         nn.Dropout(0.3), nn.Linear(512, out_features))
 
     def create_image_model(self, num_features):
-        model_ft = models.inception_v3(pretrained=True)
-        num_ftrs = model_ft.AuxLogits.fc.in_features
-        model_ft.AuxLogits.fc = nn.Linear(num_ftrs, num_features)
+        model_ft = models.resnet50(pretrained=True)
         num_ftrs = model_ft.fc.in_features
         model_ft.fc = nn.Linear(num_ftrs,num_features)
         return model_ft

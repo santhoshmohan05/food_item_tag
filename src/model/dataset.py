@@ -27,10 +27,8 @@ class MultiModalDataset(torch.utils.data.Dataset):
         label = np.asarray(self.data.iloc[idx, 7:55],dtype=float)
         if self.sourceTransform:
             image = self.sourceTransform(image)
-        #text = self.data['name'][idx] + ' ' + self.data['menu_name'][idx] + ' ' + self.data['outlet_name'][idx]
-        text_tokens = {k:v[idx] for k,v in self.encodings.item()}
-        # text_tokens = [self.encodings['input_ids'][idx], self.encodings['token_type_ids'][idx], self.encodings['attention_mask'][idx]]
-        # price = np.asarray([self.data['price'][idx]],dtype=float)
+        text_tokens = {k:torch.tensor(v[idx]) for k,v in self.encodings.items()}
         price = torch.FloatTensor([self.data['price'][idx]])
         label = torch.from_numpy(label)
-        return {'image': image, 'text':text_tokens,'price':price,'label':label}
+        output = {'image': image,'price':price,'label':label}
+        return {**output, **text_tokens}
