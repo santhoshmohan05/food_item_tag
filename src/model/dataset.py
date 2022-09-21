@@ -3,35 +3,18 @@ import pandas as pd
 import numpy as np
 from transformers import BertTokenizer
 from PIL import Image
-
-# Need to override __init__, __len__, __getitem__
-# as per datasets requirement
-class ImageDataset(torch.utils.data.Dataset):
-    def __init__(self, labelsFile, rootDir, sourceTransform):
-        self.data = pd.read_csv(labelsFile)
-        self.rootDir = rootDir
-        self.sourceTransform = sourceTransform
-
-    def __len__(self):
-        return self.data.shape[0]
-
-    def __getitem__(self, idx):
-        if torch.is_tensor(idx):
-            idx = idx.tolist()
-        imagePath = self.rootDir + "/" + self.data['photo_x'][idx]
-        image = Image.open(imagePath).convert('RGB')
-        label = np.asarray(self.data.iloc[idx, 7:55],dtype=float)
-        if self.sourceTransform:
-            image = self.sourceTransform(image)
-        return image, label
+import json
 
 class MultiModalDataset(torch.utils.data.Dataset):
     def __init__(self, labelsFile, rootDir, imageTransform):
         self.data = pd.read_csv(labelsFile)
+
         self.rootDir = rootDir
         self.sourceTransform = imageTransform
-        model_name='cahya/bert-base-indonesian-522M'
-        tokenizer = BertTokenizer.from_pretrained(model_name)
+        model_name ='cahya/bert-base-indonesian-522M'
+        self.tokenizer = BertTokenizer.from_pretrained(model_name)
+        text = list(self.data['name'] + ' ' + self.data['menu_name'] + ' '+self.data['outlet_name'])
+        self.encodings = self.tokenizer(text, truncation=True, padding=True)
 
     def __len__(self):
         return self.data.shape[0]
@@ -44,11 +27,10 @@ class MultiModalDataset(torch.utils.data.Dataset):
         label = np.asarray(self.data.iloc[idx, 7:55],dtype=float)
         if self.sourceTransform:
             image = self.sourceTransform(image)
-        name_hash = self.text_hasher.transform([self.data['name'][idx]]).toarray()
-        menu_name_hash = self.text_hasher.transform([self.data['menu_name'][idx]]).toarray()
-        outlet_name_hash = self.text_hasher.transform([self.data['outlet_name'][idx]]).toarray()
-        price = self.data['price'][idx]
-        price = np.asarray([[price]], dtype=float)
-        other = np.concatenate([name_hash, menu_name_hash, outlet_name_hash, price], axis=1)
-        other = torch.from_numpy(other[0]).float()
-        return image, other, label
+        #text = self.data['name'][idx] + ' ' + self.data['menu_name'][idx] + ' ' + self.data['outlet_name'][idx]
+        text_tokens = {k:v[idx] for k,v in self.encodings.item()}
+        # text_tokens = [self.encodings['input_ids'][idx], self.encodings['token_type_ids'][idx], self.encodings['attention_mask'][idx]]
+        # price = np.asarray([self.data['price'][idx]],dtype=float)
+        price = torch.FloatTensor([self.data['price'][idx]])
+        label = torch.from_numpy(label)
+        return {'image': image, 'text':text_tokens,'price':price,'label':label}
