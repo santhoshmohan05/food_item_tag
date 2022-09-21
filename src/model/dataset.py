@@ -11,7 +11,7 @@ class MultiModalDataset(torch.utils.data.Dataset):
 
         self.rootDir = rootDir
         self.sourceTransform = imageTransform
-        model_name ='cahya/bert-base-indonesian-522M'
+        model_name ="cahya/bert-base-indonesian-522M"
         self.tokenizer = BertTokenizer.from_pretrained(model_name)
         text = list(self.data['name'] + ' ' + self.data['menu_name'] + ' '+self.data['outlet_name'])
         self.encodings = self.tokenizer(text, truncation=True, padding=True)
